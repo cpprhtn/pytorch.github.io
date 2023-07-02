@@ -230,7 +230,7 @@
           <div class="pytorch-left-menu-search">
             
     <div class="version">
-      <a href='https://pytorch.org/docs/versions.html'>main (2.1.0a0+git981f24e ) &#x25BC</a>
+      <a href='https://pytorch.org/docs/versions.html'>main (2.1.0a0+git707d265 ) &#x25BC</a>
     </div>
     
 
@@ -335,6 +335,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../cuda.html">torch.cuda</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../mps.html">torch.mps</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../backends.html">torch.backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../export.html">torch._export.export</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../distributed.html">torch.distributed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../distributed.algorithms.join.html">torch.distributed.algorithms.join</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../distributed.elastic.html">torch.distributed.elastic</a></li>
@@ -519,7 +520,7 @@
 <span class="sd">            optimizer.zero_grad()</span>
 
 <span class="sd">            # Enables autocasting for the forward pass (model + loss)</span>
-<span class="sd">            with autocast():</span>
+<span class="sd">            with torch.autocast(device_type=&quot;cuda&quot;):</span>
 <span class="sd">                output = model(input)</span>
 <span class="sd">                loss = loss_fn(output, target)</span>
 
@@ -534,7 +535,7 @@
 
 <span class="sd">        class AutocastModel(nn.Module):</span>
 <span class="sd">            ...</span>
-<span class="sd">            @autocast()</span>
+<span class="sd">            @torch.autocast(device_type=&quot;cuda&quot;)</span>
 <span class="sd">            def forward(self, input):</span>
 <span class="sd">                ...</span>
 
@@ -552,7 +553,7 @@
 <span class="sd">        c_float32 = torch.rand((8, 8), device=&quot;cuda&quot;)</span>
 <span class="sd">        d_float32 = torch.rand((8, 8), device=&quot;cuda&quot;)</span>
 
-<span class="sd">        with autocast():</span>
+<span class="sd">        with torch.autocast(device_type=&quot;cuda&quot;):</span>
 <span class="sd">            # torch.mm is on autocast&#39;s list of ops that should run in float16.</span>
 <span class="sd">            # Inputs are float32, but the op runs in float16 and produces float16 output.</span>
 <span class="sd">            # No manual casts are required.</span>
@@ -631,9 +632,9 @@
 <span class="sd">        c_float32 = torch.rand((8, 8), device=&quot;cuda&quot;)</span>
 <span class="sd">        d_float32 = torch.rand((8, 8), device=&quot;cuda&quot;)</span>
 
-<span class="sd">        with autocast():</span>
+<span class="sd">        with torch.autocast(device_type=&quot;cuda&quot;):</span>
 <span class="sd">            e_float16 = torch.mm(a_float32, b_float32)</span>
-<span class="sd">            with autocast(enabled=False):</span>
+<span class="sd">            with torch.autocast(device_type=&quot;cuda&quot;, enabled=False):</span>
 <span class="sd">                # Calls e_float16.float() to ensure float32 execution</span>
 <span class="sd">                # (necessary because e_float16 was created in an autocasted region)</span>
 <span class="sd">                f_float32 = torch.mm(c_float32, e_float16.float())</span>
@@ -852,6 +853,23 @@
         <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">_jit_internal</span><span class="o">.</span><span class="n">is_scripting</span><span class="p">():</span>
             <span class="k">return</span> <span class="n">func</span>
         <span class="k">return</span> <span class="n">autocast_decorator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span></div>
+
+<span class="c1"># These functions aren&#39;t meant for public usage.</span>
+<span class="c1"># They are what we trace into a graph during pre_dispatch tracing</span>
+<span class="c1"># when we encounter an autocast context manager.</span>
+<span class="k">def</span> <span class="nf">_enter_autocast</span><span class="p">(</span><span class="o">*</span><span class="n">vals</span><span class="p">):</span>
+    <span class="c1"># For pre-dispatch tracing, if a TorchFunction mode is active, we&#39;ll want to trace this into a graph.</span>
+    <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">_C</span><span class="o">.</span><span class="n">_is_torch_function_mode_enabled</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">overrides</span><span class="o">.</span><span class="n">handle_torch_function</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">_enter_autocast</span><span class="p">,</span> <span class="p">[],</span> <span class="o">*</span><span class="n">vals</span><span class="p">)</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">autocast</span><span class="p">(</span><span class="o">*</span><span class="n">vals</span><span class="p">)</span>
+    <span class="n">mode</span><span class="o">.</span><span class="fm">__enter__</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">mode</span>
+
+
+<span class="k">def</span> <span class="nf">_exit_autocast</span><span class="p">(</span><span class="n">mode</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">_C</span><span class="o">.</span><span class="n">_is_torch_function_mode_enabled</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">overrides</span><span class="o">.</span><span class="n">handle_torch_function</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">amp</span><span class="o">.</span><span class="n">_exit_autocast</span><span class="p">,</span> <span class="p">[],</span> <span class="n">mode</span><span class="p">)</span>
+    <span class="n">mode</span><span class="o">.</span><span class="fm">__exit__</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </pre></div>
 
              </article>

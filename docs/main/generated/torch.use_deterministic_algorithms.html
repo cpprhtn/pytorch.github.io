@@ -231,7 +231,7 @@
           <div class="pytorch-left-menu-search">
             
     <div class="version">
-      <a href='https://pytorch.org/docs/versions.html'>main (2.1.0a0+git981f24e ) &#x25BC</a>
+      <a href='https://pytorch.org/docs/versions.html'>main (2.1.0a0+git707d265 ) &#x25BC</a>
     </div>
     
 
@@ -336,6 +336,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../cuda.html">torch.cuda</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../mps.html">torch.mps</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../backends.html">torch.backends</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../export.html">torch._export.export</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../distributed.html">torch.distributed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../distributed.algorithms.join.html">torch.distributed.algorithms.join</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../distributed.elastic.html">torch.distributed.elastic</a></li>
@@ -525,10 +526,6 @@ tensor</p></li>
 <li><p><a class="reference internal" href="torch.Tensor.index_copy.html#torch.Tensor.index_copy" title="torch.Tensor.index_copy"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.Tensor.index_copy()</span></code></a> when called on a CPU or CUDA tensor</p></li>
 <li><p><a class="reference internal" href="torch.Tensor.scatter.html#torch.Tensor.scatter" title="torch.Tensor.scatter"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.Tensor.scatter()</span></code></a> when <cite>src</cite> type is Tensor and called on CUDA tensor</p></li>
 <li><p><a class="reference internal" href="torch.Tensor.scatter_reduce.html#torch.Tensor.scatter_reduce" title="torch.Tensor.scatter_reduce"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.Tensor.scatter_reduce()</span></code></a> when <code class="docutils literal notranslate"><span class="pre">reduce='sum'</span></code> or <code class="docutils literal notranslate"><span class="pre">reduce='mean'</span></code> and called on CUDA tensor</p></li>
-<li><p><a class="reference internal" href="torch.empty.html#torch.empty" title="torch.empty"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.empty()</span></code></a>, <a class="reference internal" href="torch.empty_like.html#torch.empty_like" title="torch.empty_like"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.empty_like()</span></code></a>, <a class="reference internal" href="torch.empty_strided.html#torch.empty_strided" title="torch.empty_strided"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch.empty_strided()</span></code></a>,
-and <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.empty_permuted()</span></code> will fill the output tensor with a known
-value. Floating point or complex dtype tensors are filled with NaN. Integer
-dtype tensors are filled with the maximum value.</p></li>
 </ul>
 </div></blockquote>
 <p>The following normally-nondeterministic operations will throw a
