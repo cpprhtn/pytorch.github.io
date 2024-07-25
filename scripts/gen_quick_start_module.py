@@ -35,15 +35,17 @@ MACOS = "macos"
 acc_arch_ver_default = {
     "nightly": {
         "accnone": ("cpu", ""),
-        "cuda.x": ("cuda", "11.7"),
-        "cuda.y": ("cuda", "11.8"),
-        "rocm5.x": ("rocm", "5.4.2")
+        "cuda.x": ("cuda", "11.8"),
+        "cuda.y": ("cuda", "12.1"),
+        "cuda.z": ("cuda", "12.4"),
+        "rocm5.x": ("rocm", "6.0")
         },
     "release": {
         "accnone": ("cpu", ""),
-        "cuda.x": ("cuda", "11.7"),
-        "cuda.y": ("cuda", "11.8"),
-        "rocm5.x": ("rocm", "5.4.2")
+        "cuda.x": ("cuda", "11.8"),
+        "cuda.y": ("cuda", "12.1"),
+        "cuda.z": ("cuda", "12.4"),
+        "rocm5.x": ("rocm", "6.0")
         }
     }
 
@@ -57,7 +59,7 @@ LIBTORCH_DWNL_INSTR = {
         CXX11_ABI: "Download here (cxx11 ABI):",
         RELEASE: "Download here (Release version):",
         DEBUG: "Download here (Debug version):",
-        MACOS: "Download default libtorch here (ROCm and CUDA are not supported):",
+        MACOS: "Download arm64 libtorch here (ROCm and CUDA are not supported):",
     }
 
 def load_json_from_basedir(filename: str):
@@ -101,12 +103,13 @@ def get_gpu_info(acc_key, instr, acc_arch_map):
 # json object.
 def update_versions(versions, release_matrix, release_version):
     version = "preview"
+    template = "preview"
     acc_arch_map = acc_arch_ver_map[release_version]
 
     if release_version != "nightly":
         version = release_matrix[OperatingSystem.LINUX.value][0]["stable_version"]
         if version not in versions["versions"]:
-            versions["versions"][version] = copy.deepcopy(versions["versions"]["preview"])
+            versions["versions"][version] = copy.deepcopy(versions["versions"][template])
             versions["latest_stable"] = version
 
     # Perform update of the json file from release matrix
@@ -140,12 +143,8 @@ def update_versions(versions, release_matrix, release_version):
                                 for ver in [RELEASE, DEBUG]:
                                      instr["versions"][LIBTORCH_DWNL_INSTR[ver]] = rel_entry_dict[ver]
                         elif os_key == OperatingSystem.MACOS.value:
-                            rel_entry_dict = {
-                                x["devtoolset"]: x["installation"] for x in pkg_arch_matrix
-                                if x["libtorch_variant"] == "shared-with-deps"
-                                }
                             if instr["versions"] is not None:
-                                instr["versions"][LIBTORCH_DWNL_INSTR[MACOS]] = list(rel_entry_dict.values())[0]
+                                instr["versions"][LIBTORCH_DWNL_INSTR[MACOS]] = pkg_arch_matrix[0]["installation"]
 
 # This method is used for generating new quick-start-module.js
 # from the versions json object
@@ -188,16 +187,16 @@ def extract_arch_ver_map(release_matrix):
     for chan in ("nightly", "release"):
         cuda_ver_list = gen_ver_list(chan, "cuda")
         rocm_ver_list = gen_ver_list(chan, "rocm")
-        cuda_list = sorted(cuda_ver_list.values())[-2:]
+        cuda_list = sorted(cuda_ver_list.values())
         acc_arch_ver_map[chan]["rocm5.x"] = ("rocm", max(rocm_ver_list.values()))
-        for cuda_ver, label in zip(cuda_list, ["cuda.x", "cuda.y"]):
+        for cuda_ver, label in zip(cuda_list, ["cuda.x", "cuda.y", "cuda.z"]):
             acc_arch_ver_map[chan][label] = ("cuda", cuda_ver)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--autogenerate', dest='autogenerate', action='store_true')
-    parser.set_defaults(autogenerate=False)
+    parser.set_defaults(autogenerate=True)
 
     options = parser.parse_args()
     versions = read_published_versions()
